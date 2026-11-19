@@ -1,5 +1,6 @@
 
 import { analyzeRequirement } from "./agents/requirement-agent.js";
+import { validateAnalysis } from "./validators/analysis-validator.js";
 
 async function main() {
     console.log("==================================");
@@ -19,8 +20,45 @@ async function main() {
     try {
         const result = await analyzeRequirement(requirement);
 
+        // Validar la calidad del análisis generado por la IA.
+        const validation = validateAnalysis(result.analysis);
+
+        console.log("\n=== VALIDACION DEL ANALISIS ===");
+
+        console.log(
+            `Estado: ${validation.valid ? "VALIDO" : "CON ERRORES"}`
+        );
+
+        if (validation.errors.length > 0) {
+            console.log("\nErrores:");
+
+            validation.errors.forEach(error => {
+                console.log(`- ${error}`);
+            });
+        }
+
+        if (validation.warnings.length > 0) {
+            console.log("\nAdvertencias:");
+
+            validation.warnings.forEach(warning => {
+                console.log(`- ${warning}`);
+            });
+        }
+
+        if (
+            validation.errors.length === 0 &&
+            validation.warnings.length === 0
+        ) {
+            console.log("No se encontraron observaciones.");
+        }
+
         console.log("\n=== RESULTADO DEL PROCESAMIENTO ===");
-        console.log(result.analysis);
+
+        console.log(
+            JSON.stringify(result, null, 2)
+        );
+
+        console.log("\nAnálisis finalizado correctamente.");
 
     } catch (error) {
         console.error("\nError durante el análisis:");
