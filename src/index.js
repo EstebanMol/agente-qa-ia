@@ -1,6 +1,8 @@
 
 import { analyzeRequirement } from "./agents/requirement-agent.js";
 import { validateAnalysis } from "./validators/analysis-validator.js";
+import { designTests } from "./agents/qa-agent.js";
+
 
 async function main() {
     console.log("==================================");
@@ -18,9 +20,12 @@ async function main() {
     `;
 
     try {
+        // ETAPA 1: Análisis funcional.
         const result = await analyzeRequirement(requirement);
 
-        // Validar la calidad del análisis generado por la IA.
+        console.log("\n=== AGENTE DE ANALISIS FUNCIONAL ===");
+
+        // ETAPA 2: Validación del análisis.
         const validation = validateAnalysis(result.analysis);
 
         console.log("\n=== VALIDACION DEL ANALISIS ===");
@@ -45,23 +50,26 @@ async function main() {
             });
         }
 
-        if (
-            validation.errors.length === 0 &&
-            validation.warnings.length === 0
-        ) {
-            console.log("No se encontraron observaciones.");
+        if (!validation.valid) {
+            throw new Error(
+                "El análisis funcional contiene errores. No se ejecutará el Agente de QA."
+            );
         }
 
-        console.log("\n=== RESULTADO DEL PROCESAMIENTO ===");
+        // ETAPA 3: Diseño de pruebas.
+        const qaResult = await designTests(result.analysis);
 
-        console.log(
-            JSON.stringify(result, null, 2)
-        );
+        // ETAPA 4: Mostrar resultados.
+        console.log("\n=== RESULTADO DEL ANALISIS FUNCIONAL ===");
+        console.log(JSON.stringify(result.analysis, null, 2));
 
-        console.log("\nAnálisis finalizado correctamente.");
+        console.log("\n=== RESULTADO DEL AGENTE DE QA ===");
+        console.log(JSON.stringify(qaResult.qaDesign, null, 2));
+
+        console.log("\nProcesamiento finalizado correctamente.");
 
     } catch (error) {
-        console.error("\nError durante el análisis:");
+        console.error("\nError durante el procesamiento:");
         console.error(error.message);
     }
 }
