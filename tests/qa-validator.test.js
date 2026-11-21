@@ -93,6 +93,27 @@ test("Debe detectar IDs duplicados en los casos de prueba", () => {
     );
 });
 
+
+test("Debe detectar casos de prueba sin IDs válidos", () => {
+
+    const invalidQaDesign = structuredClone(qaDesign);
+
+    // Provocar un ID de tipo incorrecto.
+    invalidQaDesign.testCases[0].id = 123;
+
+    const result = validateQaDesign(
+        invalidQaDesign,
+        functionalAnalysis
+    );
+
+    assert.equal(result.valid, false);
+
+    assert.ok(
+        result.errors.some(error => error.includes("ID"))
+    );
+});
+
+
 test("Debe detectar referencias a reglas inexistentes", () => {
 
     const invalidQaDesign = structuredClone(qaDesign);
@@ -306,6 +327,43 @@ test("Debe advertir cuando un caso no tiene precondiciones", () => {
     );
 });
 
+test("Debe detectar elementos inválidos en las precondiciones", () => {
+
+    const invalidQaDesign = structuredClone(qaDesign);
+
+    invalidQaDesign.testCases[0].preconditions.push(null);
+
+    const result = validateQaDesign(
+        invalidQaDesign,
+        functionalAnalysis
+    );
+
+    assert.equal(result.valid, false);
+
+    assert.ok(
+        result.errors.some(error => error.includes("preconditions"))
+    );
+});
+
+
+test("Debe detectar datos de prueba sin nombres válidos", () => {
+    const invalidQaDesign = structuredClone(qaDesign);
+
+    invalidQaDesign.testCases[0].testData[0].name = "";
+
+    const result = validateQaDesign(
+        invalidQaDesign,
+        functionalAnalysis
+    );
+
+    assert.equal(result.valid, false);
+
+    assert.ok(
+        result.errors.some(error => error.includes("testData"))
+    );
+});
+
+
 test("Debe detectar colecciones inválidas en el análisis funcional", () => {
 
     const invalidFunctionalAnalysis = structuredClone(functionalAnalysis);
@@ -358,6 +416,19 @@ test("Debe detectar elementos inválidos en los datos de prueba", () => {
     assert.equal(result.valid, false);
     assert.ok(result.errors.some(error => error.includes("testData")));
 });
+
+
+test("Debe detectar elementos inválidos en los pasos de ejecución", () => {
+    const invalidQaDesign = structuredClone(qaDesign);
+
+    invalidQaDesign.testCases[0].steps.push(null);
+
+    const result = validateQaDesign(invalidQaDesign, functionalAnalysis);
+
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(error => error.includes("steps")));
+});
+
 
 test("Debe detectar relatedRules con formato inválido", () => {
     const invalidQaDesign = structuredClone(qaDesign);

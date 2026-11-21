@@ -42,12 +42,28 @@ export function validateQaDesign(qaDesign, functionalAnalysis) {
             return true;
         });
 
+        
+        // Validar que todos los casos tengan IDs válidos.
+        validTestCases.forEach((testCase, index) => {
+            if (
+                typeof testCase.id !== "string" ||
+                testCase.id.trim() === ""
+            ) {
+                errors.push(
+                    `El caso de prueba en la posición ${index + 1} tiene un ID inválido.`
+                );
+            }
+        });
+
         // Verificar que los casos válidos tengan IDs únicos.
-        const testCaseIds = validTestCases.map(testCase => testCase.id);
+        const testCaseIds = validTestCases
+            .map(testCase => testCase.id)
+            .filter(id => typeof id === "string" && id.trim() !== "");
 
         const duplicatedIds = testCaseIds.filter(
             (id, index) => testCaseIds.indexOf(id) !== index
         );
+
 
         if (duplicatedIds.length > 0) {
             errors.push(
@@ -308,6 +324,17 @@ export function validateQaDesign(qaDesign, functionalAnalysis) {
                 testCase.preconditions.length === 0
             ) {
                 missingElements.push("precondiciones");
+            } else {
+                testCase.preconditions.forEach((precondition, index) => {
+                    if (
+                        typeof precondition !== "string" ||
+                        precondition.trim() === ""
+                    ) {
+                        errors.push(
+                            `${testCase.id}: el elemento ${index + 1} de preconditions no es válido.`
+                        );
+                    }
+                });
             }
 
             if (
@@ -315,6 +342,17 @@ export function validateQaDesign(qaDesign, functionalAnalysis) {
                 testCase.steps.length === 0
             ) {
                 missingElements.push("pasos");
+            } else {
+                testCase.steps.forEach((step, index) => {
+                    if (
+                        typeof step !== "string" ||
+                        step.trim() === ""
+                    ) {
+                        errors.push(
+                            `${testCase.id}: el elemento ${index + 1} de steps no es válido.`
+                        );
+                    }
+                });
             }
 
             if (
@@ -336,7 +374,21 @@ export function validateQaDesign(qaDesign, functionalAnalysis) {
                             return false;
                         }
 
+                        
+                        // Validar el nombre del dato de prueba.
+                        if (
+                            typeof data.name !== "string" ||
+                            data.name.trim() === ""
+                        ) {
+                            errors.push(
+                                `${testCase.id}: el elemento ${index + 1} de testData tiene un nombre inválido.`
+                            );
+
+                            return false;
+                        }
+
                         return true;
+
                     });
 
                     const hasPendingData = validTestData.some(
