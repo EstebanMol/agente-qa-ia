@@ -20,11 +20,30 @@ export function validateQaDesign(qaDesign, functionalAnalysis) {
         };
     }
 
-    // Verificar que los casos de prueba tengan IDs únicos.
+    // Validar los elementos de la colección de casos de prueba.
+    let validTestCases = [];
+
     if (!Array.isArray(qaDesign.testCases)) {
         errors.push("La colección de casos de prueba no es válida.");
     } else {
-        const testCaseIds = qaDesign.testCases.map(testCase => testCase.id);
+        validTestCases = qaDesign.testCases.filter((testCase, index) => {
+            if (
+                !testCase ||
+                typeof testCase !== "object" ||
+                Array.isArray(testCase)
+            ) {
+                errors.push(
+                    `El elemento ${index + 1} de testCases no es válido.`
+                );
+
+                return false;
+            }
+
+            return true;
+        });
+
+        // Verificar que los casos válidos tengan IDs únicos.
+        const testCaseIds = validTestCases.map(testCase => testCase.id);
 
         const duplicatedIds = testCaseIds.filter(
             (id, index) => testCaseIds.indexOf(id) !== index
@@ -52,53 +71,90 @@ export function validateQaDesign(qaDesign, functionalAnalysis) {
         }
     });
 
+    // Obtener los elementos válidos de cada colección.
+    const getValidItems = (collection) => {
+        const items = Array.isArray(functionalAnalysis[collection])
+            ? functionalAnalysis[collection]
+            : [];
+
+        return items.filter((item, index) => {
+            if (
+                !item ||
+                typeof item !== "object" ||
+                Array.isArray(item)
+            ) {
+                errors.push(
+                    `El elemento ${index + 1} de ${collection} no es válido.`
+                );
+
+                return false;
+            }
+
+            // Validar que el ID sea un string no vacío.
+            if (
+                typeof item.id !== "string" ||
+                item.id.trim() === ""
+            ) {
+                errors.push(
+                    `El elemento ${index + 1} de ${collection} tiene un ID inválido.`
+                );
+
+                return false;
+            }
+
+            return true;
+        });
+    };
+
     // Obtener los IDs de reglas y escenarios del análisis funcional.
     const ruleIds = new Set(
-        (Array.isArray(functionalAnalysis.businessRules)
-            ? functionalAnalysis.businessRules
-            : []
-        ).map(rule => rule.id)
+        getValidItems("businessRules").map(rule => rule.id)
     );
 
     const scenarioIds = new Set([
-        ...(Array.isArray(functionalAnalysis.positiveScenarios)
-            ? functionalAnalysis.positiveScenarios
-            : []
-        ).map(scenario => scenario.id),
-
-        ...(Array.isArray(functionalAnalysis.negativeScenarios)
-            ? functionalAnalysis.negativeScenarios
-            : []
-        ).map(scenario => scenario.id)
+        ...getValidItems("positiveScenarios").map(scenario => scenario.id),
+        ...getValidItems("negativeScenarios").map(scenario => scenario.id)
     ]);
 
     // Validar referencias de cada caso de prueba.
     if (Array.isArray(qaDesign.testCases)) {
-        qaDesign.testCases.forEach(testCase => {
+        validTestCases.forEach(testCase => {
 
             // Verificar reglas relacionadas.
-            (testCase.relatedRules || []).forEach(ruleId => {
-                if (!ruleIds.has(ruleId)) {
-                    errors.push(
-                        `${testCase.id}: referencia a una regla inexistente (${ruleId}).`
-                    );
-                }
-            });
+            if (!Array.isArray(testCase.relatedRules)) {
+                errors.push(
+                    `${testCase.id}: relatedRules debe ser un array.`
+                );
+            } else {
+                testCase.relatedRules.forEach(ruleId => {
+                    if (!ruleIds.has(ruleId)) {
+                        errors.push(
+                            `${testCase.id}: referencia a una regla inexistente (${ruleId}).`
+                        );
+                    }
+                });
+            }
 
             // Verificar escenarios relacionados.
-            (testCase.relatedScenarios || []).forEach(scenarioId => {
-                if (!scenarioIds.has(scenarioId)) {
-                    errors.push(
-                        `${testCase.id}: referencia a un escenario inexistente (${scenarioId}).`
-                    );
-                }
-            });
+            if (!Array.isArray(testCase.relatedScenarios)) {
+                errors.push(
+                    `${testCase.id}: relatedScenarios debe ser un array.`
+                );
+            } else {
+                testCase.relatedScenarios.forEach(scenarioId => {
+                    if (!scenarioIds.has(scenarioId)) {
+                        errors.push(
+                            `${testCase.id}: referencia a un escenario inexistente (${scenarioId}).`
+                        );
+                    }
+                });
+            }
         });
     }
 
     // Validar prioridades y sus justificaciones.
     if (Array.isArray(qaDesign.testCases)) {
-        qaDesign.testCases.forEach(testCase => {
+        validTestCases.forEach(testCase => {
 
             const validPriorities = [
                 "critical",
@@ -126,7 +182,7 @@ export function validateQaDesign(qaDesign, functionalAnalysis) {
 
     // Validar coherencia del resultado esperado.
     if (Array.isArray(qaDesign.testCases)) {
-        qaDesign.testCases.forEach(testCase => {
+        validTestCases.forEach(testCase => {
 
             const hasExpectedResult =
                 typeof testCase.expectedResult === "string" &&
@@ -153,25 +209,62 @@ export function validateQaDesign(qaDesign, functionalAnalysis) {
     }
 
     // Validar la cobertura de reglas de negocio.
-    if (!qaDesign.coverage || typeof qaDesign.coverage !== "object") {
+    if (
+        !qaDesign.coverage ||
+        typeof qaDesign.coverage !== "object" ||
+        Array.isArray(qaDesign.coverage)
+    ) {
         errors.push("La información de cobertura no existe o no es válida.");
     } else {
-        const coveredRules = qaDesign.coverage.coveredRules || [];
-        const uncoveredRules = qaDesign.coverage.uncoveredRules || [];
+        const coveredRules = qaDesign.coverage.coveredRules;
+        const uncoveredRules = qaDesign.coverage.uncoveredRules;
+
+        // Validar el formato de las colecciones.
+        if (!Array.isArray(coveredRules)) {
+            errors.push("coveredRules debe ser un array.");
+        }
+
+        if (!Array.isArray(uncoveredRules)) {
+            errors.push("uncoveredRules debe ser un array.");
+        }
+
+        // Procesar únicamente colecciones válidas.
+        const validCoveredRules = Array.isArray(coveredRules)
+            ? coveredRules
+            : [];
+
+        const validUncoveredRules = Array.isArray(uncoveredRules)
+            ? uncoveredRules
+            : [];
 
         const allCoverageIds = [
-            ...coveredRules,
-            ...uncoveredRules
+            ...validCoveredRules,
+            ...validUncoveredRules
         ];
 
-        // Detectar reglas inexistentes.
-        allCoverageIds.forEach(ruleId => {
-            if (!ruleIds.has(ruleId)) {
-                errors.push(
-                    `La cobertura referencia una regla inexistente (${ruleId}).`
-                );
-            }
-        });
+
+        // Validar los identificadores de cada colección.
+        const validateCoverageIds = (collection, collectionName) => {
+            collection.forEach((ruleId, index) => {
+
+                if (typeof ruleId !== "string" || ruleId.trim() === "") {
+                    errors.push(
+                        `${collectionName}: elemento inválido en la posición ${index + 1}.`
+                    );
+
+                    return;
+                }
+
+                if (!ruleIds.has(ruleId)) {
+                    errors.push(
+                        `${collectionName}: referencia a una regla inexistente (${ruleId}).`
+                    );
+                }
+            });
+        };
+
+        validateCoverageIds(validCoveredRules, "coveredRules");
+        validateCoverageIds(validUncoveredRules, "uncoveredRules");
 
         // Detectar reglas duplicadas.
         if (new Set(allCoverageIds).size !== allCoverageIds.length) {
@@ -181,12 +274,11 @@ export function validateQaDesign(qaDesign, functionalAnalysis) {
         }
 
         // Comprobar que cada regla cubierta tenga un caso asociado.
-        coveredRules.forEach(ruleId => {
-
-            const hasTestCase = Array.isArray(qaDesign.testCases) &&
-                qaDesign.testCases.some(testCase =>
-                    (testCase.relatedRules || []).includes(ruleId)
-                );
+        validCoveredRules.forEach(ruleId => {
+            const hasTestCase = validTestCases.some(testCase =>
+                Array.isArray(testCase.relatedRules) &&
+                testCase.relatedRules.includes(ruleId)
+            );
 
             if (!hasTestCase) {
                 errors.push(
@@ -207,7 +299,7 @@ export function validateQaDesign(qaDesign, functionalAnalysis) {
 
     // Evaluar la preparación de los casos para su ejecución.
     if (Array.isArray(qaDesign.testCases)) {
-        qaDesign.testCases.forEach(testCase => {
+        validTestCases.forEach(testCase => {
 
             const missingElements = [];
 
@@ -231,14 +323,30 @@ export function validateQaDesign(qaDesign, functionalAnalysis) {
             ) {
                 missingElements.push("datos de prueba");
             } else {
-                const hasPendingData = testCase.testData.some(
-                    data => data.status === "pending"
-                );
+                    const validTestData = testCase.testData.filter((data, index) => {
+                        if (
+                            !data ||
+                            typeof data !== "object" ||
+                            Array.isArray(data)
+                        ) {
+                            errors.push(
+                                `${testCase.id}: el elemento ${index + 1} de testData no es válido.`
+                            );
 
-                if (hasPendingData) {
-                    missingElements.push("datos de prueba pendientes");
+                            return false;
+                        }
+
+                        return true;
+                    });
+
+                    const hasPendingData = validTestData.some(
+                        data => data.status === "pending"
+                    );
+
+                    if (hasPendingData) {
+                        missingElements.push("datos de prueba pendientes");
+                    }
                 }
-            }
 
             if (testCase.expectedResultStatus !== "defined") {
                 missingElements.push("resultado esperado pendiente");

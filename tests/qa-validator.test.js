@@ -326,6 +326,111 @@ test("Debe detectar colecciones inválidas en el análisis funcional", () => {
     );
 });
 
+test("Debe detectar elementos inválidos en las reglas de negocio", () => {
+    const invalidFunctionalAnalysis = structuredClone(functionalAnalysis);
 
+    invalidFunctionalAnalysis.businessRules.push(null);
 
+    const result = validateQaDesign(qaDesign, invalidFunctionalAnalysis);
 
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(error => error.includes("businessRules")));
+});
+
+test("Debe detectar elementos inválidos en los casos de prueba", () => {
+    const invalidQaDesign = structuredClone(qaDesign);
+
+    invalidQaDesign.testCases.push(null);
+
+    const result = validateQaDesign(invalidQaDesign, functionalAnalysis);
+
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(error => error.includes("testCases")));
+});
+
+test("Debe detectar elementos inválidos en los datos de prueba", () => {
+    const invalidQaDesign = structuredClone(qaDesign);
+
+    invalidQaDesign.testCases[0].testData.push(null);
+
+    const result = validateQaDesign(invalidQaDesign, functionalAnalysis);
+
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(error => error.includes("testData")));
+});
+
+test("Debe detectar relatedRules con formato inválido", () => {
+    const invalidQaDesign = structuredClone(qaDesign);
+
+    invalidQaDesign.testCases[0].relatedRules = "RN-01";
+
+    const result = validateQaDesign(invalidQaDesign, functionalAnalysis);
+
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(error => error.includes("relatedRules")));
+});
+
+test("Debe detectar coveredRules con formato inválido", () => {
+    const invalidQaDesign = structuredClone(qaDesign);
+
+    invalidQaDesign.coverage.coveredRules = "RN-01";
+
+    const result = validateQaDesign(invalidQaDesign, functionalAnalysis);
+
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(error => error.includes("coveredRules")));
+});
+
+test("Debe detectar uncoveredRules con formato inválido", () => {
+    const invalidQaDesign = structuredClone(qaDesign);
+
+    invalidQaDesign.coverage.uncoveredRules = "RN-01";
+
+    const result = validateQaDesign(invalidQaDesign, functionalAnalysis);
+
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(error => error.includes("uncoveredRules")));
+});
+
+test("Debe detectar elementos inválidos en coveredRules", () => {
+    const invalidQaDesign = structuredClone(qaDesign);
+
+    invalidQaDesign.coverage.coveredRules = [
+        "RN-01",
+        null,
+        123,
+        {}
+    ];
+
+    const result = validateQaDesign(invalidQaDesign, functionalAnalysis);
+
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(error => error.includes("coveredRules")));
+});
+
+test("Debe detectar elementos inválidos en uncoveredRules", () => {
+    const invalidQaDesign = structuredClone(qaDesign);
+
+    invalidQaDesign.coverage.uncoveredRules = [
+        "RN-01",
+        null,
+        123,
+        {}
+    ];
+
+    const result = validateQaDesign(invalidQaDesign, functionalAnalysis);
+
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(error => error.includes("uncoveredRules")));
+});
+
+test("Debe detectar reglas de negocio sin IDs válidos", () => {
+    const invalidAnalysis = structuredClone(functionalAnalysis);
+
+    invalidAnalysis.businessRules[0].id = 123;
+
+    const result = validateQaDesign(qaDesign, invalidAnalysis);
+
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(error => error.includes("businessRules")));
+});
