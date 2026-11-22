@@ -505,3 +505,121 @@ test("Debe detectar reglas de negocio sin IDs válidos", () => {
     assert.equal(result.valid, false);
     assert.ok(result.errors.some(error => error.includes("businessRules")));
 });
+
+test("Debe detectar estados inválidos en los datos de prueba", () => {
+    const invalidQaDesign = structuredClone(qaDesign);
+
+    invalidQaDesign.testCases[0].testData[0].status = "invalid";
+
+    const result = validateQaDesign(
+        invalidQaDesign,
+        functionalAnalysis
+    );
+
+    assert.equal(result.valid, false);
+
+    assert.ok(
+        result.errors.some(error => error.includes("status"))
+    );
+});
+
+test("Debe detectar datos definidos sin valores válidos", () => {
+    const invalidQaDesign = structuredClone(qaDesign);
+
+    invalidQaDesign.testCases[0].testData[0].status = "defined";
+    invalidQaDesign.testCases[0].testData[0].value = "";
+
+    const result = validateQaDesign(
+        invalidQaDesign,
+        functionalAnalysis
+    );
+
+    assert.equal(result.valid, false);
+
+    assert.ok(
+        result.errors.some(error => error.includes("value"))
+    );
+});
+
+test("Debe aceptar distintos tipos de valores en datos de prueba", () => {
+    const validQaDesign = structuredClone(qaDesign);
+
+    const testData = validQaDesign.testCases[0].testData;
+
+    testData[0].value = "30123456";
+    testData[0].status = "defined";
+
+    testData.push(
+        { name: "Cantidad", value: 12345, status: "defined" },
+        { name: "Activo", value: false, status: "defined" },
+        { name: "Usuario", value: { nombre: "Juan" }, status: "defined" },
+        { name: "Códigos", value: [1, 2, 3], status: "defined" }
+    );
+
+    const result = validateQaDesign(
+        validQaDesign,
+        functionalAnalysis
+    );
+
+    assert.equal(result.valid, true);
+});
+
+test("Debe detectar tipos de valores no permitidos en datos de prueba", () => {
+    const invalidQaDesign = structuredClone(qaDesign);
+
+    invalidQaDesign.testCases[0].testData[0].status = "defined";
+    invalidQaDesign.testCases[0].testData[0].value = new Date();
+
+    const result = validateQaDesign(
+        invalidQaDesign,
+        functionalAnalysis
+    );
+
+    assert.equal(result.valid, false);
+
+    assert.ok(
+        result.errors.some(error => error.includes("value"))
+    );
+});
+
+test("Debe detectar números no válidos en los datos de prueba", () => {
+    const invalidQaDesign = structuredClone(qaDesign);
+
+    invalidQaDesign.testCases[0].testData[0].status = "defined";
+    invalidQaDesign.testCases[0].testData[0].value = NaN;
+
+    const result = validateQaDesign(
+        invalidQaDesign,
+        functionalAnalysis
+    );
+
+    assert.equal(result.valid, false);
+
+    assert.ok(
+        result.errors.some(error => error.includes("value"))
+    );
+});
+
+test("Debe detectar valores no válidos dentro de objetos y arrays", () => {
+    const invalidQaDesign = structuredClone(qaDesign);
+
+    invalidQaDesign.testCases[0].testData[0].status = "defined";
+    invalidQaDesign.testCases[0].testData[0].value = {
+        importe: 100,
+        detalles: {
+            descuento: Infinity
+        },
+        codigos: [1, 2, NaN]
+    };
+
+    const result = validateQaDesign(
+        invalidQaDesign,
+        functionalAnalysis
+    );
+
+    assert.equal(result.valid, false);
+
+    assert.ok(
+        result.errors.some(error => error.includes("value"))
+    );
+});

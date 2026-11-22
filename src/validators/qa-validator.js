@@ -1,3 +1,50 @@
+// Verificar si un valor es compatible con JSON.
+function isJsonValue(value, seen = new WeakSet()) {
+
+    // Los valores null, string y boolean son válidos.
+    if (
+        value === null ||
+        typeof value === "string" ||
+        typeof value === "boolean"
+    ) {
+        return true;
+    }
+
+    // Los números deben ser finitos.
+    if (typeof value === "number") {
+        return Number.isFinite(value);
+    }
+
+    // Rechazar tipos que no sean objetos o arrays.
+    if (typeof value !== "object") {
+        return false;
+    }
+
+    // Detectar referencias circulares.
+    if (seen.has(value)) {
+        return false;
+    }
+
+    seen.add(value);
+
+    let valid = false;
+
+    if (Array.isArray(value)) {
+        valid = value.every(item => isJsonValue(item, seen));
+    } else if (
+        Object.getPrototypeOf(value) === Object.prototype ||
+        Object.getPrototypeOf(value) === null
+    ) {
+        valid = Object.values(value).every(
+            item => isJsonValue(item, seen)
+        );
+    }
+
+    seen.delete(value);
+
+    return valid;
+}
+
 export function validateQaDesign(qaDesign, functionalAnalysis) {
     const errors = [];
     const warnings = [];
@@ -386,6 +433,44 @@ export function validateQaDesign(qaDesign, functionalAnalysis) {
 
                             return false;
                         }
+
+                        // Validar el estado del dato de prueba.
+                        const validStatuses = ["defined", "pending", "example"];
+
+                        if (!validStatuses.includes(data.status)) {
+                            errors.push(
+                                `${testCase.id}: el elemento ${index + 1} de testData tiene un status inválido.`
+                            );
+
+                            return false;
+                        }
+
+                        // Validar que los datos definidos tengan un valor.
+                        if (data.status === "defined") {
+                            const value = data.value;
+
+                            // Rechazar valores ausentes o vacíos.
+                            if (
+                                value === undefined ||
+                                value === null ||
+                                (typeof value === "string" && value.trim() === "")
+                            ) {
+                                errors.push(
+                                    `${testCase.id}: el elemento ${index + 1} de testData tiene un value inválido para un dato definido.`
+                                );
+
+                                return false;
+                            }
+
+                        // Validar que el valor sea compatible con JSON.
+                        if (!isJsonValue(value)) {
+                            errors.push(
+                                `${testCase.id}: el elemento ${index + 1} de testData tiene un tipo de value no permitido.`
+                            );
+
+                            return false;
+                        }
+                    }
 
                         return true;
 
