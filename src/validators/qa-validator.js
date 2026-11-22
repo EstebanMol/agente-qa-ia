@@ -183,6 +183,29 @@ export function validateQaDesign(qaDesign, functionalAnalysis) {
     if (Array.isArray(qaDesign.testCases)) {
         validTestCases.forEach(testCase => {
 
+            // Validar la coherencia entre el tipo de prueba y la técnica.
+            if (
+                testCase.testType === "boundary" &&
+                testCase.designTechnique !== "boundary_value_analysis"
+            ) {
+                errors.push(
+                    `${testCase.id}: una prueba de tipo boundary debe utilizar boundary_value_analysis como designTechnique.`
+                );
+            }
+
+            // Validar que las pruebas boundary tengan datos de prueba.
+            if (
+                testCase.testType === "boundary" &&
+                (
+                    !Array.isArray(testCase.testData) ||
+                    testCase.testData.length === 0
+                )
+            ) {
+                errors.push(
+                    `${testCase.id}: una prueba de tipo boundary debe incluir datos de prueba (testData).`
+                );
+            }
+
             // Verificar reglas relacionadas.
             if (!Array.isArray(testCase.relatedRules)) {
                 errors.push(
@@ -346,6 +369,20 @@ export function validateQaDesign(qaDesign, functionalAnalysis) {
             if (!hasTestCase) {
                 errors.push(
                     `La regla ${ruleId} figura como cubierta, pero no tiene casos de prueba asociados.`
+                );
+            }
+        });
+
+        // Comprobar que las reglas no cubiertas no tengan casos asociados.
+        validUncoveredRules.forEach(ruleId => {
+            const hasTestCase = validTestCases.some(testCase =>
+                Array.isArray(testCase.relatedRules) &&
+                testCase.relatedRules.includes(ruleId)
+            );
+
+            if (hasTestCase) {
+                errors.push(
+                    `La regla ${ruleId} figura como no cubierta, pero tiene casos de prueba asociados.`
                 );
             }
         });

@@ -39,8 +39,13 @@ const qaDesign = {
                     status: "defined"
                 }
             ],
+            title: "Consultar IMEI con información disponible",
+            objective: "Verificar que el sistema devuelva la información correspondiente al IMEI.",
+            testType: "positive",
+            designTechnique: "use_case",
             relatedRules: ["RN-01"],
             relatedScenarios: ["EP-01"]
+            
         },
         {
             id: "TC-02",
@@ -57,6 +62,10 @@ const qaDesign = {
                     status: "defined"
                 }
             ],
+            title: "Consultar IMEI sin sustracción vigente",
+            objective: "Verificar la respuesta del sistema cuando el IMEI no registra una sustracción vigente.",
+            testType: "negative",
+            designTechnique: "equivalence_partitioning",
             relatedRules: ["RN-02"],
             relatedScenarios: ["EN-01"]
         }
@@ -623,3 +632,82 @@ test("Debe detectar valores no válidos dentro de objetos y arrays", () => {
         result.errors.some(error => error.includes("value"))
     );
 });
+
+test("Debe detectar reglas no cubiertas que tienen casos de prueba asociados", () => {
+    const invalidQaDesign = structuredClone(qaDesign);
+
+    // Buscar un caso que tenga al menos una regla relacionada.
+    const testCase = invalidQaDesign.testCases.find(
+        testCase => testCase.relatedRules.length > 0
+    );
+
+    const ruleId = testCase.relatedRules[0];
+
+    // Declarar esa regla como no cubierta.
+    invalidQaDesign.coverage.coveredRules =
+        invalidQaDesign.coverage.coveredRules.filter(
+            id => id !== ruleId
+        );
+
+    invalidQaDesign.coverage.uncoveredRules.push(ruleId);
+
+    const result = validateQaDesign(
+        invalidQaDesign,
+        functionalAnalysis
+    );
+
+    assert.equal(result.valid, false);
+
+    assert.ok(
+        result.errors.some(error =>
+            error.includes("no cubierta") &&
+            error.includes(ruleId)
+        )
+    );
+});
+
+test("Debe detectar técnicas incompatibles con pruebas de valores límite", () => {
+    const invalidQaDesign = structuredClone(qaDesign);
+
+    invalidQaDesign.testCases[0].testType = "boundary";
+    invalidQaDesign.testCases[0].designTechnique = "use_case";
+
+    const result = validateQaDesign(
+        invalidQaDesign,
+        functionalAnalysis
+    );
+
+    assert.equal(result.valid, false);
+
+    assert.ok(
+        result.errors.some(error =>
+            error.includes("boundary") &&
+            error.includes("designTechnique")
+        )
+    );
+});
+
+test("Debe detectar pruebas boundary sin datos de prueba", () => {
+    const invalidQaDesign = structuredClone(qaDesign);
+
+    invalidQaDesign.testCases[0].testType = "boundary";
+    invalidQaDesign.testCases[0].designTechnique =
+        "boundary_value_analysis";
+
+    invalidQaDesign.testCases[0].testData = [];
+
+    const result = validateQaDesign(
+        invalidQaDesign,
+        functionalAnalysis
+    );
+
+    assert.equal(result.valid, false);
+
+    assert.ok(
+        result.errors.some(error =>
+            error.includes("boundary") &&
+            error.includes("testData")
+        )
+    );
+});
+
