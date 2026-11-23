@@ -174,9 +174,17 @@ export function validateQaDesign(qaDesign, functionalAnalysis) {
         getValidItems("businessRules").map(rule => rule.id)
     );
 
+    const positiveScenarioIds = new Set(
+        getValidItems("positiveScenarios").map(scenario => scenario.id)
+    );
+
+    const negativeScenarioIds = new Set(
+        getValidItems("negativeScenarios").map(scenario => scenario.id)
+    );
+
     const scenarioIds = new Set([
-        ...getValidItems("positiveScenarios").map(scenario => scenario.id),
-        ...getValidItems("negativeScenarios").map(scenario => scenario.id)
+        ...positiveScenarioIds,
+        ...negativeScenarioIds
     ]);
 
     // Validar referencias de cada caso de prueba.
@@ -246,16 +254,6 @@ export function validateQaDesign(qaDesign, functionalAnalysis) {
 
             // Validar coherencia entre el tipo de prueba y los escenarios relacionados.
             if (Array.isArray(testCase.relatedScenarios)) {
-
-                const positiveScenarioIds = new Set(
-                    (functionalAnalysis.positiveScenarios || [])
-                        .map(scenario => scenario.id)
-                );
-
-                const negativeScenarioIds = new Set(
-                    (functionalAnalysis.negativeScenarios || [])
-                        .map(scenario => scenario.id)
-                );
 
                 if (
                     testCase.testType === "positive" &&
@@ -685,17 +683,6 @@ export function validateQaDesign(qaDesign, functionalAnalysis) {
                         );
                     }
 
-                    // Advertir cuando todos los datos de prueba están pendientes.
-                    if (
-                        validTestData.length > 0 &&
-                        validTestData.every(
-                            data => data.status === "pending"
-                        )
-                    ) {
-                        warnings.push(
-                            `${testCase.id}: todos los datos de prueba están pendientes. El caso todavía no está preparado para ejecutarse.`
-                        );
-                    }
                 }
 
             if (testCase.expectedResultStatus !== "defined") {

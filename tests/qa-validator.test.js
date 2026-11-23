@@ -404,6 +404,60 @@ test("Debe detectar colecciones inválidas en el análisis funcional", () => {
     );
 });
 
+test("Debe manejar elementos null en los escenarios del análisis funcional", () => {
+
+    const invalidFunctionalAnalysis = structuredClone(functionalAnalysis);
+
+    invalidFunctionalAnalysis.positiveScenarios = [
+        null,
+        ...invalidFunctionalAnalysis.positiveScenarios
+    ];
+
+    let result;
+
+    assert.doesNotThrow(() => {
+        result = validateQaDesign(
+            qaDesign,
+            invalidFunctionalAnalysis
+        );
+    });
+
+    assert.equal(result.valid, false);
+
+    assert.ok(
+        result.errors.some(error =>
+            error.includes("positiveScenarios")
+        )
+    );
+});
+
+test("Debe manejar elementos null en los escenarios negativos del análisis funcional", () => {
+
+    const invalidFunctionalAnalysis = structuredClone(functionalAnalysis);
+
+    invalidFunctionalAnalysis.negativeScenarios = [
+        null,
+        ...invalidFunctionalAnalysis.negativeScenarios
+    ];
+
+    let result;
+
+    assert.doesNotThrow(() => {
+        result = validateQaDesign(
+            qaDesign,
+            invalidFunctionalAnalysis
+        );
+    });
+
+    assert.equal(result.valid, false);
+
+    assert.ok(
+        result.errors.some(error =>
+            error.includes("negativeScenarios")
+        )
+    );
+});
+
 test("Debe detectar elementos inválidos en las reglas de negocio", () => {
     const invalidFunctionalAnalysis = structuredClone(functionalAnalysis);
 
@@ -869,3 +923,4 @@ test("Debe advertir cuando un escenario no está clasificado en la cobertura", (
         )
     );
 });
+
