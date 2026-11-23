@@ -98,11 +98,20 @@ No inventes identificadores de reglas ni escenarios.
 
 En coverage:
 
+Cobertura de reglas de negocio:
 - coveredRules: IDs de reglas cubiertas por uno o más casos.
 - uncoveredRules: IDs de reglas que no tienen cobertura.
 - coverageObservations: observaciones sobre cobertura y limitaciones.
 
-No afirmes cobertura completa si existen reglas sin casos asociados.
+Cobertura de escenarios funcionales:
+- coveredScenarios: IDs de escenarios cubiertos por uno o más casos.
+- uncoveredScenarios: IDs de escenarios que no tienen casos asociados.
+- scenarioCoverageObservations: observaciones sobre cobertura de escenarios y limitaciones.
+
+Reglas:
+- Cada regla y cada escenario deben aparecer en una sola de las dos colecciones correspondientes.
+- No inventes reglas, escenarios ni identificadores.
+- No afirmes cobertura completa si existen reglas o escenarios sin casos asociados.
 
 8. PREGUNTAS Y RIESGOS
 

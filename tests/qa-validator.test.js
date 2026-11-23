@@ -20,8 +20,12 @@ const functionalAnalysis = {
 // Diseño de QA simulado.
 const qaDesign = {
     coverage: {
-        coveredRules: ["RN-01", "RN-02"],
-        uncoveredRules: []
+    coveredRules: ["RN-01", "RN-02"],
+    uncoveredRules: [],
+    coverageObservations: [],
+    coveredScenarios: ["EP-01", "EN-01"],
+    uncoveredScenarios: [],
+    scenarioCoverageObservations: []
     },
     testCases: [
         {
@@ -259,6 +263,12 @@ test("Debe advertir cuando un caso tiene datos de prueba pendientes", () => {
 
     const incompleteQaDesign = structuredClone(qaDesign);
 
+    incompleteQaDesign.testCases[0].testData.push({
+        name: "Estado del dispositivo",
+        value: "Activo",
+        status: "defined"
+    });
+
     incompleteQaDesign.testCases[0].testData[0].status = "pending";
 
     const result = validateQaDesign(
@@ -278,6 +288,7 @@ test("Debe advertir cuando un caso tiene datos de prueba pendientes", () => {
 test("Debe advertir cuando el resultado esperado está pendiente", () => {
 
     const incompleteQaDesign = structuredClone(qaDesign);
+    console.log(incompleteQaDesign.testCases[0].testData);
 
     incompleteQaDesign.testCases[0].expectedResultStatus = "pending";
     incompleteQaDesign.testCases[0].expectedResult = "";
@@ -711,3 +722,150 @@ test("Debe detectar pruebas boundary sin datos de prueba", () => {
     );
 });
 
+test("Debe advertir cuando todos los datos de prueba están pendientes", () => {
+    const invalidQaDesign = structuredClone(qaDesign);
+
+    const testCase = invalidQaDesign.testCases[0];
+
+    testCase.testData.forEach(testData => {
+        testData.status = "pending";
+    });
+
+    const result = validateQaDesign(
+        invalidQaDesign,
+        functionalAnalysis
+    );
+
+    assert.equal(result.valid, true);
+
+    assert.ok(
+        result.warnings.some(warning =>
+            warning.includes(testCase.id) &&
+            warning.includes("todos") 
+        )
+    );
+
+    assert.ok(
+    !result.warnings.some(warning =>
+        warning.includes("requiere completar datos de prueba pendientes")
+    )
+    );
+});
+
+test("Debe detectar análisis de valores límite en pruebas que no son boundary", () => {
+
+    const invalidQaDesign = structuredClone(qaDesign);
+
+    const testCase = invalidQaDesign.testCases[0];
+
+    testCase.testType = "positive";
+    testCase.designTechnique = "boundary_value_analysis";
+
+    const result = validateQaDesign(
+        invalidQaDesign,
+        functionalAnalysis
+    );
+
+    assert.equal(result.valid, false);
+
+    assert.ok(
+        result.errors.some(error =>
+            error.includes(testCase.id) &&
+            error.includes("boundary")
+        )
+    );
+});
+
+test("Debe detectar casos positivos sin escenarios positivos relacionados", () => {
+
+    const invalidQaDesign = structuredClone(qaDesign);
+
+    const testCase = invalidQaDesign.testCases[0];
+
+    testCase.testType = "positive";
+    testCase.relatedScenarios = ["EN-01"];
+
+    const result = validateQaDesign(
+        invalidQaDesign,
+        functionalAnalysis
+    );
+
+    assert.equal(result.valid, false);
+
+    assert.ok(
+        result.errors.some(error =>
+            error.includes(testCase.id) &&
+            error.includes("escenario positivo")
+        )
+    );
+});
+
+test("Debe detectar escenarios cubiertos sin casos de prueba asociados", () => {
+
+    const invalidQaDesign = structuredClone(qaDesign);
+
+    invalidQaDesign.coverage.coveredScenarios = ["EP-01"];
+    invalidQaDesign.testCases.forEach(testCase => {
+        testCase.relatedScenarios = [];
+    });
+
+    const result = validateQaDesign(
+        invalidQaDesign,
+        functionalAnalysis
+    );
+
+    assert.equal(result.valid, false);
+
+    assert.ok(
+        result.errors.some(error =>
+            error.includes("EP-01") &&
+            error.includes("cubierto") &&
+            error.includes("casos de prueba asociados")
+        )
+    );
+});
+
+test("Debe detectar escenarios no cubiertos con casos de prueba asociados", () => {
+
+    const invalidQaDesign = structuredClone(qaDesign);
+
+    invalidQaDesign.coverage.coveredScenarios = ["EN-01"];
+    invalidQaDesign.coverage.uncoveredScenarios = ["EP-01"];
+
+    const result = validateQaDesign(
+        invalidQaDesign,
+        functionalAnalysis
+    );
+
+    assert.equal(result.valid, false);
+
+    assert.ok(
+        result.errors.some(error =>
+            error.includes("EP-01") &&
+            error.includes("no cubierto") &&
+            error.includes("casos de prueba asociados")
+        )
+    );
+});
+
+test("Debe advertir cuando un escenario no está clasificado en la cobertura", () => {
+
+    const incompleteQaDesign = structuredClone(qaDesign);
+
+    incompleteQaDesign.coverage.coveredScenarios = ["EP-01"];
+    incompleteQaDesign.coverage.uncoveredScenarios = [];
+
+    const result = validateQaDesign(
+        incompleteQaDesign,
+        functionalAnalysis
+    );
+
+    assert.equal(result.valid, true);
+
+    assert.ok(
+        result.warnings.some(warning =>
+            warning.includes("EN-01") &&
+            warning.includes("cobertura")
+        )
+    );
+});

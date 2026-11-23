@@ -21,12 +21,27 @@ export const qaTestDesignSchema = {
                 coverageObservations: {
                     type: "array",
                     items: { type: "string" }
+                },
+                coveredScenarios: {
+                    type: "array",
+                    items: { type: "string" }
+                },
+                uncoveredScenarios: {
+                    type: "array",
+                    items: { type: "string" }
+                },
+                scenarioCoverageObservations: {
+                    type: "array",
+                    items: { type: "string" }
                 }
             },
             required: [
                 "coveredRules",
                 "uncoveredRules",
-                "coverageObservations"
+                "coverageObservations",
+                "coveredScenarios",
+                "uncoveredScenarios",
+                "scenarioCoverageObservations"
             ]
         },
         testCases: {

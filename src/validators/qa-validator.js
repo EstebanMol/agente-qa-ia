@@ -192,6 +192,14 @@ export function validateQaDesign(qaDesign, functionalAnalysis) {
                     `${testCase.id}: una prueba de tipo boundary debe utilizar boundary_value_analysis como designTechnique.`
                 );
             }
+            if (
+                testCase.designTechnique === "boundary_value_analysis" &&
+                testCase.testType !== "boundary"
+            ) {
+                errors.push(
+                    `${testCase.id}: la técnica boundary_value_analysis requiere que el tipo de prueba sea boundary.`
+                );
+            }
 
             // Validar que las pruebas boundary tengan datos de prueba.
             if (
@@ -235,6 +243,43 @@ export function validateQaDesign(qaDesign, functionalAnalysis) {
                     }
                 });
             }
+
+            // Validar coherencia entre el tipo de prueba y los escenarios relacionados.
+            if (Array.isArray(testCase.relatedScenarios)) {
+
+                const positiveScenarioIds = new Set(
+                    (functionalAnalysis.positiveScenarios || [])
+                        .map(scenario => scenario.id)
+                );
+
+                const negativeScenarioIds = new Set(
+                    (functionalAnalysis.negativeScenarios || [])
+                        .map(scenario => scenario.id)
+                );
+
+                if (
+                    testCase.testType === "positive" &&
+                    !testCase.relatedScenarios.some(
+                        scenarioId => positiveScenarioIds.has(scenarioId)
+                    )
+                ) {
+                    errors.push(
+                        `${testCase.id}: un caso de prueba positivo debe estar relacionado con al menos un escenario positivo.`
+                    );
+                }
+
+                if (
+                    testCase.testType === "negative" &&
+                    !testCase.relatedScenarios.some(
+                        scenarioId => negativeScenarioIds.has(scenarioId)
+                    )
+                ) {
+                    errors.push(
+                        `${testCase.id}: un caso de prueba negativo debe estar relacionado con al menos un escenario negativo.`
+                    );
+                }
+            }
+
         });
     }
 
@@ -395,6 +440,113 @@ export function validateQaDesign(qaDesign, functionalAnalysis) {
                 );
             }
         });
+
+        // Validar la cobertura de escenarios funcionales.
+        const coveredScenarios = qaDesign.coverage.coveredScenarios;
+        const uncoveredScenarios = qaDesign.coverage.uncoveredScenarios;
+
+        // Validar el formato de las colecciones.
+        if (!Array.isArray(coveredScenarios)) {
+            errors.push("coveredScenarios debe ser un array.");
+        }
+
+        if (!Array.isArray(uncoveredScenarios)) {
+            errors.push("uncoveredScenarios debe ser un array.");
+        }
+
+        // Procesar únicamente colecciones válidas.
+        const validCoveredScenarios = Array.isArray(coveredScenarios)
+            ? coveredScenarios
+            : [];
+
+        const validUncoveredScenarios = Array.isArray(uncoveredScenarios)
+            ? uncoveredScenarios
+            : [];
+
+        const allScenarioCoverageIds = [
+            ...validCoveredScenarios,
+            ...validUncoveredScenarios
+        ];
+
+        // Validar los identificadores de cada colección.
+        const validateScenarioCoverageIds = (collection, collectionName) => {
+            collection.forEach((scenarioId, index) => {
+
+                if (
+                    typeof scenarioId !== "string" ||
+                    scenarioId.trim() === ""
+                ) {
+                    errors.push(
+                        `${collectionName}: elemento inválido en la posición ${index + 1}.`
+                    );
+
+                    return;
+                }
+
+                if (!scenarioIds.has(scenarioId)) {
+                    errors.push(
+                        `${collectionName}: referencia a un escenario inexistente (${scenarioId}).`
+                    );
+                }
+            });
+        };
+
+        validateScenarioCoverageIds(
+            validCoveredScenarios,
+            "coveredScenarios"
+        );
+
+        validateScenarioCoverageIds(
+            validUncoveredScenarios,
+            "uncoveredScenarios"
+        );
+
+        // Detectar escenarios duplicados.
+        if (
+            new Set(allScenarioCoverageIds).size !==
+            allScenarioCoverageIds.length
+        ) {
+            errors.push(
+                "Hay escenarios duplicados en la información de cobertura."
+            );
+        }
+
+        // Comprobar que cada escenario cubierto tenga un caso asociado.
+        validCoveredScenarios.forEach(scenarioId => {
+            const hasTestCase = validTestCases.some(testCase =>
+                Array.isArray(testCase.relatedScenarios) &&
+                testCase.relatedScenarios.includes(scenarioId)
+            );
+
+            if (!hasTestCase) {
+                errors.push(
+                    `El escenario ${scenarioId} figura como cubierto, pero no tiene casos de prueba asociados.`
+                );
+            }
+        });
+
+        // Comprobar que los escenarios no cubiertos no tengan casos asociados.
+        validUncoveredScenarios.forEach(scenarioId => {
+            const hasTestCase = validTestCases.some(testCase =>
+                Array.isArray(testCase.relatedScenarios) &&
+                testCase.relatedScenarios.includes(scenarioId)
+            );
+
+            if (hasTestCase) {
+                errors.push(
+                    `El escenario ${scenarioId} figura como no cubierto, pero tiene casos de prueba asociados.`
+                );
+            }
+        });
+
+        // Detectar escenarios que no fueron clasificados.
+        scenarioIds.forEach(scenarioId => {
+            if (!allScenarioCoverageIds.includes(scenarioId)) {
+                warnings.push(
+                    `El escenario ${scenarioId} no fue clasificado en la cobertura.`
+                );
+            }
+        });
     }
 
     // Evaluar la preparación de los casos para su ejecución.
@@ -517,8 +669,32 @@ export function validateQaDesign(qaDesign, functionalAnalysis) {
                         data => data.status === "pending"
                     );
 
-                    if (hasPendingData) {
+                    const allDataPending =
+                        validTestData.length > 0 &&
+                        validTestData.every(
+                            data => data.status === "pending"
+                        );
+
+                    if (hasPendingData && !allDataPending) {
                         missingElements.push("datos de prueba pendientes");
+                    }
+
+                    if (allDataPending) {
+                        warnings.push(
+                            `${testCase.id}: todos los datos de prueba están pendientes. El caso todavía no está preparado para ejecutarse.`
+                        );
+                    }
+
+                    // Advertir cuando todos los datos de prueba están pendientes.
+                    if (
+                        validTestData.length > 0 &&
+                        validTestData.every(
+                            data => data.status === "pending"
+                        )
+                    ) {
+                        warnings.push(
+                            `${testCase.id}: todos los datos de prueba están pendientes. El caso todavía no está preparado para ejecutarse.`
+                        );
                     }
                 }
 
