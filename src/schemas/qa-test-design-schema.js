@@ -2,6 +2,55 @@
 export const qaTestDesignSchema = {
     type: "object",
     additionalProperties: false,
+
+    $defs: {
+        jsonValue: {
+            anyOf: [
+                { type: "string" },
+                { type: "number" },
+                { type: "boolean" },
+                { type: "null" },
+                {
+                    type: "array",
+                    items: {
+                        $ref: "#/$defs/jsonValue"
+                    }
+                },
+                {
+                    type: "object",
+                    additionalProperties: false,
+                    properties: {
+                        kind: {
+                            type: "string",
+                            enum: ["object"]
+                        },
+                        entries: {
+                            type: "array",
+                            items: {
+                                $ref: "#/$defs/jsonEntry"
+                            }
+                        }
+                    },
+                    required: ["kind", "entries"]
+                }
+            ]
+        },
+
+        jsonEntry: {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+                key: {
+                    type: "string"
+                },
+                value: {
+                    $ref: "#/$defs/jsonValue"
+                }
+            },
+            required: ["key", "value"]
+        }
+    },
+
     properties: {
         summary: {
             type: "string"
@@ -86,7 +135,9 @@ export const qaTestDesignSchema = {
                             additionalProperties: false,
                             properties: {
                                 name: { type: "string" },
-                                value: { type: "string" },
+                                value: {
+                                    $ref: "#/$defs/jsonValue"
+                                },
                                 status: {
                                     type: "string",
                                     enum: [

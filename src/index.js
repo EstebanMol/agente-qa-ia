@@ -2,7 +2,7 @@
 import { analyzeRequirement } from "./agents/requirement-agent.js";
 import { validateAnalysis } from "./validators/analysis-validator.js";
 import { designTests } from "./agents/qa-agent.js";
-
+import { validateQaDesign } from "./validators/qa-validator.js";
 
 async function main() {
     console.log("==================================");
@@ -58,6 +58,40 @@ async function main() {
 
         // ETAPA 3: Diseño de pruebas.
         const qaResult = await designTests(result.analysis);
+
+        // ETAPA 4: Validación del diseño de QA.
+        const qaValidation = validateQaDesign(
+            qaResult.qaDesign,
+            result.analysis
+        );
+
+        console.log("\n=== VALIDACION DEL DISEÑO DE QA ===");
+
+        console.log(
+            `Estado: ${qaValidation.valid ? "VALIDO" : "CON ERRORES"}`
+        );
+
+        if (qaValidation.errors.length > 0) {
+            console.log("\nErrores:");
+
+            qaValidation.errors.forEach(error => {
+                console.log(`- ${error}`);
+            });
+        }
+
+        if (qaValidation.warnings.length > 0) {
+            console.log("\nAdvertencias:");
+
+            qaValidation.warnings.forEach(warning => {
+                console.log(`- ${warning}`);
+            });
+        }
+
+        if (!qaValidation.valid) {
+            throw new Error(
+                "El diseño de QA contiene errores. No se considerará válido."
+            );
+        }
 
         // ETAPA 4: Mostrar resultados.
         console.log("\n=== RESULTADO DEL ANALISIS FUNCIONAL ===");

@@ -1,6 +1,7 @@
 
 import { generateResponse } from "../services/openai-service.js";
 import { qaTestDesignSchema } from "../schemas/qa-test-design-schema.js";
+import { normalizeJsonValue } from "../utils/json-normalizer.js";
 
 const instructions = `
 Eres un QA Engineer Senior especializado en diseño de pruebas funcionales,
@@ -55,6 +56,49 @@ Utiliza:
 - defined: cuando el dato está especificado.
 - pending: cuando falta una definición funcional.
 - example: cuando se utiliza un valor ilustrativo.
+
+El campo value admite valores JSON de distintos tipos:
+
+- string
+- number
+- boolean
+- null
+- arrays
+- objetos
+
+REGLAS PARA REPRESENTAR OBJETOS
+
+Como el esquema JSON utiliza Structured Outputs en modo estricto,
+los objetos deben representarse mediante esta estructura:
+
+{
+    "kind": "object",
+    "entries": [
+        {
+            "key": "nombrePropiedad",
+            "value": "valor"
+        }
+    ]
+}
+
+Cada elemento de entries representa una propiedad del objeto.
+
+El campo value de cada entrada puede contener cualquier tipo JSON
+admitido, incluidos arrays y otros objetos representados con
+la misma estructura.
+
+Para representar un objeto vacío, utiliza:
+
+{
+    "kind": "object",
+    "entries": []
+}
+
+Los arrays se representan como arrays JSON convencionales y
+pueden contener valores simples, otros arrays u objetos
+representados mediante la estructura indicada.
+
+No utilices esta representación para valores que no sean objetos.
 
 Nunca presentes datos ilustrativos como datos reales o confirmados.
 
@@ -148,6 +192,13 @@ export async function designTests(functionalAnalysis) {
             schemaName: "qa_test_design"
         }
     );
+
+    // Reconstruir los valores JSON convencionales de los datos de prueba.
+    for (const testCase of qaDesign.testCases ?? []) {
+        for (const testData of testCase.testData ?? []) {
+            testData.value = normalizeJsonValue(testData.value);
+        }
+    }
 
     return {
         status: "designed",
