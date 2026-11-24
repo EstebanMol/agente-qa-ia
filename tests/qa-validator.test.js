@@ -924,3 +924,95 @@ test("Debe advertir cuando un escenario no está clasificado en la cobertura", (
     );
 });
 
+test("Debe aceptar valores de ejemplo válidos y advertir que requieren confirmación", () => {
+
+    const exampleQaDesign = structuredClone(qaDesign);
+
+    exampleQaDesign.testCases[0].testData[0].status = "example";
+
+    const result = validateQaDesign(
+        exampleQaDesign,
+        functionalAnalysis
+    );
+
+    assert.equal(result.valid, true);
+    assert.equal(result.errors.length, 0);
+
+    assert.ok(
+        result.warnings.some(warning =>
+            warning.includes("datos de prueba") &&
+            warning.includes("ejemplos")
+        )
+    );
+});
+
+test("Debe detectar valores no permitidos en datos pendientes", () => {
+
+    const invalidQaDesign = structuredClone(qaDesign);
+
+    invalidQaDesign.testCases[0].testData[0].status = "pending";
+    invalidQaDesign.testCases[0].testData[0].value = NaN;
+
+    const result = validateQaDesign(
+        invalidQaDesign,
+        functionalAnalysis
+    );
+
+    assert.equal(result.valid, false);
+
+    assert.ok(
+        result.errors.some(error =>
+            error.includes("tipo de value no permitido")
+        )
+    );
+});
+
+test("Debe advertir cuando todos los datos de prueba son ejemplos", () => {
+
+    const exampleQaDesign = structuredClone(qaDesign);
+
+    exampleQaDesign.testCases.forEach(testCase => {
+        testCase.testData.forEach(data => {
+            data.status = "example";
+        });
+    });
+
+    const result = validateQaDesign(
+        exampleQaDesign,
+        functionalAnalysis
+    );
+
+    assert.equal(result.valid, true);
+    assert.equal(result.errors.length, 0);
+
+    assert.ok(
+        result.warnings.some(warning =>
+            warning.includes("todos los datos de prueba son ejemplos")
+        )
+    );
+});
+
+test("Debe advertir cuando hay datos definidos y datos de ejemplo", () => {
+
+    const mixedQaDesign = structuredClone(qaDesign);
+
+    mixedQaDesign.testCases[0].testData.push({
+        name: "IMEI alternativo",
+        value: "111111111111111",
+        status: "example"
+    });
+
+    const result = validateQaDesign(
+        mixedQaDesign,
+        functionalAnalysis
+    );
+
+    assert.equal(result.valid, true);
+    assert.equal(result.errors.length, 0);
+
+    assert.ok(
+        result.warnings.some(warning =>
+            warning.includes("datos de prueba de ejemplo por confirmar")
+        )
+    );
+});
