@@ -87,6 +87,29 @@ async function main() {
             });
         }
 
+        // Mostrar métricas de cobertura efectiva.
+        console.log("\n=== COBERTURA EFECTIVA ===");
+
+        if (qaValidation.effectiveRulesCoverage) {
+            const rules = qaValidation.effectiveRulesCoverage;
+
+            console.log("\nReglas de negocio:");
+            console.log(`Total: ${rules.total}`);
+            console.log(`Cubiertas: ${rules.covered}`);
+            console.log(`Sin cobertura: ${rules.uncovered}`);
+            console.log(`Porcentaje: ${rules.percentage}%`);
+        }
+
+        if (qaValidation.effectiveScenariosCoverage) {
+            const scenarios = qaValidation.effectiveScenariosCoverage;
+
+            console.log("\nEscenarios funcionales:");
+            console.log(`Total: ${scenarios.total}`);
+            console.log(`Cubiertos: ${scenarios.covered}`);
+            console.log(`Sin cobertura: ${scenarios.uncovered}`);
+            console.log(`Porcentaje: ${scenarios.percentage}%`);
+        }
+
         if (!qaValidation.valid) {
             throw new Error(
                 "El diseño de QA contiene errores. No se considerará válido."

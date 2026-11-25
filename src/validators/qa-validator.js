@@ -149,6 +149,41 @@ function validateCoverage({
   });
 }
 
+// Calcular la cobertura efectiva a partir de las referencias reales.
+function calculateEffectiveCoverage({
+  validIds,
+  testCases,
+  relatedField,
+}) {
+  const coveredIds = new Set();
+
+  testCases.forEach((testCase) => {
+    if (!Array.isArray(testCase[relatedField])) {
+      return;
+    }
+
+    testCase[relatedField].forEach((itemId) => {
+      if (validIds.has(itemId)) {
+        coveredIds.add(itemId);
+      }
+    });
+  });
+
+  const total = validIds.size;
+  const covered = coveredIds.size;
+  const uncovered = total - covered;
+
+  const percentage =
+    total === 0 ? 0 : Math.round((covered / total) * 100);
+
+  return {
+    total,
+    covered,
+    uncovered,
+    percentage,
+  };
+}
+
 export function validateQaDesign(qaDesign, functionalAnalysis) {
   const errors = [];
   const warnings = [];
@@ -257,20 +292,78 @@ export function validateQaDesign(qaDesign, functionalAnalysis) {
     });
   };
 
-  // Obtener los IDs de reglas y escenarios del análisis funcional.
-  const ruleIds = new Set(
-    getValidItems("businessRules").map((rule) => rule.id),
-  );
+   // Obtener las colecciones válidas del análisis funcional.
+  const businessRules = getValidItems("businessRules");
+  const positiveScenarios = getValidItems("positiveScenarios");
+  const negativeScenarios = getValidItems("negativeScenarios");
+
+  // Detectar IDs duplicados dentro de una colección.
+  const detectDuplicateIds = (items, collectionName) => {
+    const seenIds = new Set();
+    const reportedIds = new Set();
+
+    items.forEach((item) => {
+      if (seenIds.has(item.id)) {
+        if (!reportedIds.has(item.id)) {
+          errors.push(
+            `El ID ${item.id} está duplicado en ${collectionName}.`,
+          );
+          reportedIds.add(item.id);
+        }
+      } else {
+        seenIds.add(item.id);
+      }
+    });
+  };
+
+    // Detectar referencias duplicadas dentro de un caso de prueba.
+    const detectDuplicateReferences = (references, fieldName, testCaseId) => {
+    const seenIds = new Set();
+    const reportedIds = new Set();
+
+    references.forEach((referenceId) => {
+      if (seenIds.has(referenceId)) {
+        if (!reportedIds.has(referenceId)) {
+          errors.push(
+            `${testCaseId}: el ID ${referenceId} está duplicado en ${fieldName}.`,
+          );
+          reportedIds.add(referenceId);
+        }
+      } else {
+        seenIds.add(referenceId);
+      }
+    });
+  };
+
+  // Validar duplicados en cada colección.
+  detectDuplicateIds(businessRules, "businessRules");
+  detectDuplicateIds(positiveScenarios, "positiveScenarios");
+  detectDuplicateIds(negativeScenarios, "negativeScenarios");
+
+  // Obtener los IDs de reglas y escenarios.
+  const ruleIds = new Set(businessRules.map((rule) => rule.id));
 
   const positiveScenarioIds = new Set(
-    getValidItems("positiveScenarios").map((scenario) => scenario.id),
+    positiveScenarios.map((scenario) => scenario.id),
   );
 
   const negativeScenarioIds = new Set(
-    getValidItems("negativeScenarios").map((scenario) => scenario.id),
+    negativeScenarios.map((scenario) => scenario.id),
   );
 
-  const scenarioIds = new Set([...positiveScenarioIds, ...negativeScenarioIds]);
+  // Detectar colisiones entre escenarios positivos y negativos.
+  positiveScenarioIds.forEach((scenarioId) => {
+    if (negativeScenarioIds.has(scenarioId)) {
+      errors.push(
+        `El ID ${scenarioId} está duplicado entre positiveScenarios y negativeScenarios.`,
+      );
+    }
+  });
+
+  const scenarioIds = new Set([
+    ...positiveScenarioIds,
+    ...negativeScenarioIds,
+  ]);
 
   // Validar referencias de cada caso de prueba.
   if (Array.isArray(qaDesign.testCases)) {
@@ -307,6 +400,12 @@ export function validateQaDesign(qaDesign, functionalAnalysis) {
       if (!Array.isArray(testCase.relatedRules)) {
         errors.push(`${testCase.id}: relatedRules debe ser un array.`);
       } else {
+        detectDuplicateReferences(
+          testCase.relatedRules,
+          "relatedRules",
+          testCase.id,
+        );
+
         testCase.relatedRules.forEach((ruleId) => {
           if (!ruleIds.has(ruleId)) {
             errors.push(
@@ -320,6 +419,12 @@ export function validateQaDesign(qaDesign, functionalAnalysis) {
       if (!Array.isArray(testCase.relatedScenarios)) {
         errors.push(`${testCase.id}: relatedScenarios debe ser un array.`);
       } else {
+        detectDuplicateReferences(
+          testCase.relatedScenarios,
+          "relatedScenarios",
+          testCase.id,
+        );
+
         testCase.relatedScenarios.forEach((scenarioId) => {
           if (!scenarioIds.has(scenarioId)) {
             errors.push(
@@ -405,6 +510,9 @@ export function validateQaDesign(qaDesign, functionalAnalysis) {
     });
   }
 
+
+  let effectiveRulesCoverage = null;
+  let effectiveScenariosCoverage = null;
   // Validar la estructura de la información de cobertura.
   if (
     !qaDesign.coverage ||
@@ -431,6 +539,13 @@ export function validateQaDesign(qaDesign, functionalAnalysis) {
       testCases: validTestCases,
     });
 
+    effectiveRulesCoverage = calculateEffectiveCoverage({
+      validIds: ruleIds,
+      testCases: validTestCases,
+      relatedField: "relatedRules",
+    });
+
+
     // Validar la cobertura de escenarios funcionales.
     validateCoverage({
       coverage: qaDesign.coverage,
@@ -448,6 +563,13 @@ export function validateQaDesign(qaDesign, functionalAnalysis) {
       warnings,
       testCases: validTestCases,
     });
+
+    effectiveScenariosCoverage = calculateEffectiveCoverage({
+      validIds: scenarioIds,
+      testCases: validTestCases,
+      relatedField: "relatedScenarios",
+    });
+
   }
 
   // Evaluar la preparación de los casos para su ejecución.
@@ -597,9 +719,11 @@ export function validateQaDesign(qaDesign, functionalAnalysis) {
     });
   }
 
-  return {
-    valid: errors.length === 0,
-    errors,
-    warnings,
-  };
+ return {
+  valid: errors.length === 0,
+  errors,
+  warnings,
+  effectiveRulesCoverage,
+  effectiveScenariosCoverage,
+};
 }

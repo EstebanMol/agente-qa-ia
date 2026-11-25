@@ -1018,3 +1018,165 @@ test("Debe advertir cuando hay datos definidos y datos de ejemplo", () => {
         )
     );
 });
+
+
+test("Debe detectar IDs duplicados en las reglas de negocio", () => {
+    const invalidAnalysis = structuredClone(functionalAnalysis);
+
+    invalidAnalysis.businessRules.push({ id: "RN-01" });
+
+    const result = validateQaDesign(qaDesign, invalidAnalysis);
+
+    assert.equal(result.valid, false);
+
+    assert.ok(
+        result.errors.some(error =>
+            error.includes("businessRules") &&
+            error.includes("RN-01") &&
+            error.includes("duplicado")
+        )
+    );
+});
+
+test("Debe detectar IDs duplicados en los escenarios positivos", () => {
+    const invalidAnalysis = structuredClone(functionalAnalysis);
+
+    invalidAnalysis.positiveScenarios.push({ id: "EP-01" });
+
+    const result = validateQaDesign(qaDesign, invalidAnalysis);
+
+    assert.equal(result.valid, false);
+
+    assert.ok(
+        result.errors.some(error =>
+            error.includes("positiveScenarios") &&
+            error.includes("EP-01") &&
+            error.includes("duplicado")
+        )
+    );
+});
+
+test("Debe detectar IDs duplicados entre escenarios positivos y negativos", () => {
+    const invalidAnalysis = structuredClone(functionalAnalysis);
+
+    invalidAnalysis.negativeScenarios[0].id = "EP-01";
+
+    const result = validateQaDesign(qaDesign, invalidAnalysis);
+
+    assert.equal(result.valid, false);
+
+    assert.ok(
+        result.errors.some(error =>
+            error.includes("EP-01") &&
+            error.includes("duplicado")
+        )
+    );
+});
+
+test("Debe detectar reglas relacionadas duplicadas en un caso de prueba", () => {
+    const invalidDesign = structuredClone(qaDesign);
+
+    invalidDesign.testCases[0].relatedRules.push("RN-01");
+
+    const result = validateQaDesign(invalidDesign, functionalAnalysis);
+
+    assert.equal(result.valid, false);
+
+    assert.ok(
+        result.errors.some(error =>
+            error.includes("relatedRules") &&
+            error.includes("RN-01") &&
+            error.includes("duplicado")
+        )
+    );
+});
+
+test("Debe detectar escenarios relacionados duplicados en un caso de prueba", () => {
+    const invalidDesign = structuredClone(qaDesign);
+
+    invalidDesign.testCases[0].relatedScenarios.push("EP-01");
+
+    const result = validateQaDesign(invalidDesign, functionalAnalysis);
+
+    assert.equal(result.valid, false);
+
+    assert.ok(
+        result.errors.some(error =>
+            error.includes("relatedScenarios") &&
+            error.includes("EP-01") &&
+            error.includes("duplicado")
+        )
+    );
+});
+
+test("Debe calcular correctamente la cobertura efectiva de reglas y escenarios", () => {
+  const result = validateQaDesign(qaDesign, functionalAnalysis);
+
+  assert.deepEqual(result.effectiveRulesCoverage, {
+    total: 2,
+    covered: 2,
+    uncovered: 0,
+    percentage: 100,
+  });
+
+  assert.deepEqual(result.effectiveScenariosCoverage, {
+    total: 2,
+    covered: 2,
+    uncovered: 0,
+    percentage: 100,
+  });
+});
+
+test("Debe calcular correctamente la cobertura efectiva parcial", () => {
+  const partialQaDesign = structuredClone(qaDesign);
+
+  // Quitar las referencias a la segunda regla y al segundo escenario.
+  partialQaDesign.testCases[1].relatedRules = [];
+  partialQaDesign.testCases[1].relatedScenarios = [];
+
+  const result = validateQaDesign(
+    partialQaDesign,
+    functionalAnalysis,
+  );
+
+  assert.deepEqual(result.effectiveRulesCoverage, {
+    total: 2,
+    covered: 1,
+    uncovered: 1,
+    percentage: 50,
+  });
+
+  assert.deepEqual(result.effectiveScenariosCoverage, {
+    total: 2,
+    covered: 1,
+    uncovered: 1,
+    percentage: 50,
+  });
+});
+
+test("No debe contar referencias inexistentes en la cobertura efectiva", () => {
+  const invalidQaDesign = structuredClone(qaDesign);
+
+  // Reemplazar una referencia válida por una inexistente.
+  invalidQaDesign.testCases[0].relatedRules = ["RN-99"];
+  invalidQaDesign.testCases[0].relatedScenarios = ["EP-99"];
+
+  const result = validateQaDesign(
+    invalidQaDesign,
+    functionalAnalysis,
+  );
+
+  assert.deepEqual(result.effectiveRulesCoverage, {
+    total: 2,
+    covered: 1,
+    uncovered: 1,
+    percentage: 50,
+  });
+
+  assert.deepEqual(result.effectiveScenariosCoverage, {
+    total: 2,
+    covered: 1,
+    uncovered: 1,
+    percentage: 50,
+  });
+});
