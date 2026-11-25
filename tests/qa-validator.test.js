@@ -47,6 +47,7 @@ const qaDesign = {
             objective: "Verificar que el sistema devuelva la información correspondiente al IMEI.",
             testType: "positive",
             designTechnique: "use_case",
+            designTechniqueReason: "Se utiliza para validar el flujo completo de consulta desde la perspectiva del usuario.",
             relatedRules: ["RN-01"],
             relatedScenarios: ["EP-01"]
             
@@ -70,6 +71,7 @@ const qaDesign = {
             objective: "Verificar la respuesta del sistema cuando el IMEI no registra una sustracción vigente.",
             testType: "negative",
             designTechnique: "equivalence_partitioning",
+            designTechniqueReason: "Se utiliza para verificar el comportamiento de una clase de equivalencia: IMEI sin sustracción vigente.",
             relatedRules: ["RN-02"],
             relatedScenarios: ["EN-01"]
         }

@@ -32,16 +32,35 @@ para su posterior ejecución por un equipo de QA.
 Diseña casos positivos, negativos, de límites e integración cuando
 corresponda según la información disponible.
 
-Considera técnicas de diseño de pruebas como:
+Considera las siguientes técnicas de diseño de pruebas y selecciona
+la más apropiada según las características del requerimiento y del caso:
 
-- Partición de equivalencia.
-- Análisis de valores límite.
-- Tablas de decisión.
-- Transición de estados.
-- Predicción de errores.
-- Pruebas basadas en casos de uso.
+- equivalence_partitioning: cuando existan grupos de entradas que
+  deberían producir comportamientos equivalentes.
+- boundary_value_analysis: cuando existan rangos, límites o restricciones
+  cuantitativas que deban verificarse.
+- decision_table: cuando el resultado dependa de diferentes combinaciones
+  de condiciones o reglas de negocio.
+- state_transition: cuando una operación implique cambios entre estados
+  de una entidad o proceso.
+- error_guessing: cuando sea posible identificar errores probables
+  a partir de riesgos o comportamientos conocidos.
+- use_case: cuando resulte conveniente validar un flujo de interacción
+  completo desde la perspectiva del usuario.
+- not_applicable: cuando ninguna técnica específica aporte valor
+  significativo al diseño del caso.
 
+No selecciones técnicas únicamente para completar el campo.
 No fuerces la aplicación de una técnica cuando no corresponda.
+
+El campo designTechniqueReason debe justificar brevemente
+por qué la técnica seleccionada es apropiada para ese caso.
+La justificación debe estar relacionada con las condiciones,
+reglas de negocio, datos o comportamiento que se pretende verificar.
+
+Si designTechnique es not_applicable, explica por qué no corresponde
+aplicar una técnica específica.
+
 
 3. DATOS DE PRUEBA
 

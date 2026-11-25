@@ -124,6 +124,9 @@ export const qaTestDesignSchema = {
                             "not_applicable"
                         ]
                     },
+                    designTechniqueReason: {
+                        type: "string"
+                    },
                     preconditions: {
                         type: "array",
                         items: { type: "string" }
@@ -191,6 +194,7 @@ export const qaTestDesignSchema = {
                     "objective",
                     "testType",
                     "designTechnique",
+                    "designTechniqueReason",
                     "preconditions",
                     "testData",
                     "steps",

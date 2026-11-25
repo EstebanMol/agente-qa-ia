@@ -373,6 +373,14 @@ export function validateQaDesign(qaDesign, functionalAnalysis) {
       ) {
         errors.push(`${testCase.id}: no tiene una justificación de prioridad.`);
       }
+      if (
+        typeof testCase.designTechniqueReason !== "string" ||
+        testCase.designTechniqueReason.trim() === ""
+      ) {
+        errors.push(
+            `${testCase.id}: no tiene una justificación de la técnica de diseño.`
+        );
+      }
     });
   }
 
