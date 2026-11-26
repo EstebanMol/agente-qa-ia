@@ -572,10 +572,17 @@ export function validateQaDesign(qaDesign, functionalAnalysis) {
 
   }
 
+  // Inicializar métricas de preparación para ejecución.
+    let executionReadiness = null;
   // Evaluar la preparación de los casos para su ejecución.
-  if (Array.isArray(qaDesign.testCases)) {
+    if (Array.isArray(qaDesign.testCases)) {
+    const readinessDetails = [];
+    let ready = 0;
+    let notReady = 0;
+
     validTestCases.forEach((testCase) => {
       const missingElements = [];
+      const errorsBeforeReadiness = errors.length;
 
       if (
         !Array.isArray(testCase.preconditions) ||
@@ -586,9 +593,13 @@ export function validateQaDesign(qaDesign, functionalAnalysis) {
         testCase.preconditions.forEach((precondition, index) => {
           if (typeof precondition !== "string" || precondition.trim() === "") {
             errors.push(
-              `${testCase.id}: el elemento ${index + 1} de preconditions no es válido.`,
+                `${testCase.id}: el elemento ${index + 1} de preconditions no es válido.`,
             );
-          }
+
+            if (!missingElements.includes("precondiciones inválidas")) {
+                missingElements.push("precondiciones inválidas");
+            }
+            }
         });
       }
 
@@ -596,14 +607,19 @@ export function validateQaDesign(qaDesign, functionalAnalysis) {
         missingElements.push("pasos");
       } else {
         testCase.steps.forEach((step, index) => {
-          if (typeof step !== "string" || step.trim() === "") {
-            errors.push(
-              `${testCase.id}: el elemento ${index + 1} de steps no es válido.`,
-            );
-          }
+            if (typeof step !== "string" || step.trim() === "") {
+                errors.push(
+                `${testCase.id}: el elemento ${index + 1} de steps no es válido.`,
+                );
+
+                if (!missingElements.includes("pasos inválidos")) {
+                missingElements.push("pasos inválidos");
+                }
+            }
         });
       }
 
+      let allDataPending = false;
       if (!Array.isArray(testCase.testData) || testCase.testData.length === 0) {
         missingElements.push("datos de prueba");
       } else {
@@ -666,6 +682,10 @@ export function validateQaDesign(qaDesign, functionalAnalysis) {
           return true;
         });
 
+        if (validTestData.length !== testCase.testData.length) {
+            missingElements.push("datos de prueba inválidos");
+        }
+
         const hasPendingData = validTestData.some(
           (data) => data.status === "pending",
         );
@@ -674,22 +694,22 @@ export function validateQaDesign(qaDesign, functionalAnalysis) {
           (data) => data.status === "example",
         );
 
-        const allDataPending =
-          validTestData.length > 0 &&
-          validTestData.every((data) => data.status === "pending");
+        allDataPending =
+            validTestData.length > 0 &&
+            validTestData.every((data) => data.status === "pending");
 
         const allDataExample =
           validTestData.length > 0 &&
           validTestData.every((data) => data.status === "example");
 
-        // Identificar datos pendientes cuando no todos lo están.
-        if (hasPendingData && !allDataPending) {
-          missingElements.push("datos de prueba pendientes");
+        // Identificar datos pendientes.
+        if (hasPendingData) {
+        missingElements.push("datos de prueba pendientes");
         }
 
         // Identificar datos de ejemplo que requieren confirmación.
-        if (hasExampleData && !allDataExample) {
-          missingElements.push("datos de prueba de ejemplo por confirmar");
+        if (hasExampleData) {
+        missingElements.push("datos de prueba de ejemplo por confirmar");
         }
 
         // Advertir cuando todos los datos están pendientes.
@@ -707,16 +727,67 @@ export function validateQaDesign(qaDesign, functionalAnalysis) {
         }
       }
 
-      if (testCase.expectedResultStatus !== "defined") {
+      const hasExpectedResult =
+        typeof testCase.expectedResult === "string" &&
+        testCase.expectedResult.trim() !== "";
+
+        if (
+        testCase.expectedResultStatus !== "defined" ||
+        !hasExpectedResult
+        ) {
         missingElements.push("resultado esperado pendiente");
-      }
+        }
 
       if (missingElements.length > 0) {
-        warnings.push(
-          `${testCase.id}: requiere completar ${missingElements.join(", ")} antes de su ejecución.`,
-        );
-      }
+        const elementsToComplete = allDataPending
+            ? missingElements.filter(
+                (element) => element !== "datos de prueba pendientes",
+            )
+            : missingElements;
+
+        if (elementsToComplete.length > 0) {
+            warnings.push(
+            `${testCase.id}: requiere completar ${elementsToComplete.join(", ")} antes de su ejecución.`,
+            );
+        }
+        }
+
+        // Verificar si el caso tiene errores de validación.
+        const hasReadinessErrors = errors.length > errorsBeforeReadiness;
+
+        // Clasificar el estado de preparación del caso.
+        const isReady =
+            missingElements.length === 0 &&
+            !hasReadinessErrors &&
+            testCase.expectedResultStatus === "defined" &&
+            hasExpectedResult;
+
+        if (isReady) {
+            ready++;
+        } else {
+            notReady++;
+        }
+
+        // Registrar el detalle individual del caso.
+        readinessDetails.push({
+        testCaseId: testCase.id,
+        status: isReady ? "ready" : "notReady",
+        missingElements,
+        });
     });
+
+    // Calcular las métricas generales de preparación.
+    const total = ready + notReady;
+    const percentage =
+      total === 0 ? 0 : Math.round((ready / total) * 100);
+
+    executionReadiness = {
+      total,
+      ready,
+      notReady,
+      percentage,
+      details: readinessDetails,
+    };
   }
 
  return {
@@ -725,5 +796,6 @@ export function validateQaDesign(qaDesign, functionalAnalysis) {
   warnings,
   effectiveRulesCoverage,
   effectiveScenariosCoverage,
+  executionReadiness,
 };
 }

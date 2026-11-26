@@ -89,6 +89,227 @@ test("Debe aceptar un diseño de QA sin inconsistencias", () => {
     assert.equal(result.errors.length, 0);
 });
 
+test("Debe calcular correctamente la preparación de casos listos para ejecución", () => {
+    const result = validateQaDesign(
+        qaDesign,
+        functionalAnalysis
+    );
+
+    assert.equal(result.executionReadiness.total, 2);
+    assert.equal(result.executionReadiness.ready, 2);
+    assert.equal(result.executionReadiness.notReady, 0);
+    assert.equal(result.executionReadiness.percentage, 100);
+
+    assert.equal(
+        result.executionReadiness.details[0].status,
+        "ready"
+    );
+
+    assert.equal(
+        result.executionReadiness.details[1].status,
+        "ready"
+    );
+});
+
+test("Debe identificar casos no preparados por tener datos pendientes", () => {
+    const incompleteQaDesign = structuredClone(qaDesign);
+
+    incompleteQaDesign.testCases[0].testData[0].status = "pending";
+
+    const result = validateQaDesign(
+        incompleteQaDesign,
+        functionalAnalysis
+    );
+
+    assert.equal(result.executionReadiness.total, 2);
+    assert.equal(result.executionReadiness.ready, 1);
+    assert.equal(result.executionReadiness.notReady, 1);
+    assert.equal(result.executionReadiness.percentage, 50);
+
+    assert.equal(
+        result.executionReadiness.details[0].status,
+        "notReady"
+    );
+
+    assert.ok(
+        result.executionReadiness.details[0].missingElements.includes(
+            "datos de prueba pendientes"
+        )
+    );
+});
+
+test("Debe identificar casos no preparados por tener pasos inválidos", () => {
+    const incompleteQaDesign = structuredClone(qaDesign);
+
+    incompleteQaDesign.testCases[0].steps[0] = "";
+
+    const result = validateQaDesign(
+        incompleteQaDesign,
+        functionalAnalysis
+    );
+
+    assert.equal(result.executionReadiness.ready, 1);
+    assert.equal(result.executionReadiness.notReady, 1);
+    assert.equal(result.executionReadiness.percentage, 50);
+
+    assert.equal(
+        result.executionReadiness.details[0].status,
+        "notReady"
+    );
+
+    assert.ok(
+        result.executionReadiness.details[0].missingElements.includes(
+            "pasos inválidos"
+        )
+    );
+});
+
+test("Debe identificar casos no preparados por tener precondiciones inválidas", () => {
+    const incompleteQaDesign = structuredClone(qaDesign);
+
+    incompleteQaDesign.testCases[0].preconditions[0] = "";
+
+    const result = validateQaDesign(
+        incompleteQaDesign,
+        functionalAnalysis
+    );
+
+    assert.equal(result.executionReadiness.ready, 1);
+    assert.equal(result.executionReadiness.notReady, 1);
+    assert.equal(result.executionReadiness.percentage, 50);
+
+    assert.equal(
+        result.executionReadiness.details[0].status,
+        "notReady"
+    );
+
+    assert.ok(
+        result.executionReadiness.details[0].missingElements.includes(
+            "precondiciones inválidas"
+        )
+    );
+});
+
+test("Debe identificar casos no preparados por tener datos de prueba inválidos", () => {
+    const incompleteQaDesign = structuredClone(qaDesign);
+
+    incompleteQaDesign.testCases[0].testData[0].name = "";
+
+    const result = validateQaDesign(
+        incompleteQaDesign,
+        functionalAnalysis
+    );
+
+    assert.equal(result.executionReadiness.ready, 1);
+    assert.equal(result.executionReadiness.notReady, 1);
+    assert.equal(result.executionReadiness.percentage, 50);
+
+    assert.equal(
+        result.executionReadiness.details[0].status,
+        "notReady"
+    );
+
+    assert.ok(
+        result.executionReadiness.details[0].missingElements.includes(
+            "datos de prueba inválidos"
+        )
+    );
+});
+
+test("Debe identificar casos no preparados por tener el resultado esperado vacío", () => {
+    const incompleteQaDesign = structuredClone(qaDesign);
+
+    incompleteQaDesign.testCases[0].expectedResult = "";
+
+    const result = validateQaDesign(
+        incompleteQaDesign,
+        functionalAnalysis
+    );
+
+    assert.equal(result.executionReadiness.ready, 1);
+    assert.equal(result.executionReadiness.notReady, 1);
+    assert.equal(result.executionReadiness.percentage, 50);
+
+    assert.equal(
+        result.executionReadiness.details[0].status,
+        "notReady"
+    );
+
+    assert.ok(
+        result.executionReadiness.details[0].missingElements.includes(
+            "resultado esperado pendiente"
+        )
+    );
+});
+
+test("Debe identificar casos no preparados por tener el resultado esperado pendiente", () => {
+    const incompleteQaDesign = structuredClone(qaDesign);
+
+    incompleteQaDesign.testCases[0].expectedResultStatus = "pending";
+
+    const result = validateQaDesign(
+        incompleteQaDesign,
+        functionalAnalysis
+    );
+
+    assert.equal(result.executionReadiness.ready, 1);
+    assert.equal(result.executionReadiness.notReady, 1);
+    assert.equal(result.executionReadiness.percentage, 50);
+
+    assert.equal(
+        result.executionReadiness.details[0].status,
+        "notReady"
+    );
+
+    assert.ok(
+        result.executionReadiness.details[0].missingElements.includes(
+            "resultado esperado pendiente"
+        )
+    );
+});
+
+test("Debe identificar casos no preparados por tener datos de ejemplo", () => {
+    const incompleteQaDesign = structuredClone(qaDesign);
+
+    incompleteQaDesign.testCases[0].testData[0].status = "example";
+
+    const result = validateQaDesign(
+        incompleteQaDesign,
+        functionalAnalysis
+    );
+
+    assert.equal(result.executionReadiness.ready, 1);
+    assert.equal(result.executionReadiness.notReady, 1);
+    assert.equal(result.executionReadiness.percentage, 50);
+
+    assert.equal(
+        result.executionReadiness.details[0].status,
+        "notReady"
+    );
+
+    assert.ok(
+        result.executionReadiness.details[0].missingElements.includes(
+            "datos de prueba de ejemplo por confirmar"
+        )
+    );
+});
+
+test("Debe calcular métricas de preparación cuando no hay casos de prueba", () => {
+    const emptyQaDesign = structuredClone(qaDesign);
+
+    emptyQaDesign.testCases = [];
+
+    const result = validateQaDesign(
+        emptyQaDesign,
+        functionalAnalysis
+    );
+
+    assert.equal(result.executionReadiness.total, 0);
+    assert.equal(result.executionReadiness.ready, 0);
+    assert.equal(result.executionReadiness.notReady, 0);
+    assert.equal(result.executionReadiness.percentage, 0);
+    assert.deepEqual(result.executionReadiness.details, []);
+});
 test("Debe detectar IDs duplicados en los casos de prueba", () => {
 
     const invalidQaDesign = structuredClone(qaDesign);
@@ -107,7 +328,6 @@ test("Debe detectar IDs duplicados en los casos de prueba", () => {
         result.errors.some(error => error.includes("IDs duplicados"))
     );
 });
-
 
 test("Debe detectar casos de prueba sin IDs válidos", () => {
 
