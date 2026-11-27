@@ -1,0 +1,10 @@
+
+Como cliente de una tienda online quiero consultar el estado de mis pedidos mediante su nÃºmero de pedido, para conocer en quÃ© etapa se encuentra la entrega.
+
+El sistema debe permitir consultar Ãºnicamente pedidos existentes.
+
+La consulta debe mostrar el estado actual del pedido y la fecha estimada de entrega, cuando estÃ© disponible.
+
+Si el nÃºmero de pedido no existe, el sistema debe informar que no se encontrÃ³ ningÃºn pedido.
+
+Si el pedido todavÃ­a no tiene una fecha estimada de entrega, el sistema debe informar que esa fecha aÃºn no estÃ¡ disponible.

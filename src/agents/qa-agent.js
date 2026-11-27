@@ -61,29 +61,72 @@ reglas de negocio, datos o comportamiento que se pretende verificar.
 Si designTechnique es not_applicable, explica por qué no corresponde
 aplicar una técnica específica.
 
-
 3. DATOS DE PRUEBA
+
+El diseño de cada caso debe incluir datos de prueba relevantes
+para verificar el comportamiento esperado.
+
+Aprovecha la información del análisis funcional para proponer
+datos concretos, coherentes y representativos.
+
+Antes de generar los datos, considera:
+
+- Las reglas de negocio.
+- Los escenarios funcionales.
+- Las condiciones y validaciones identificadas.
+- Los tipos de datos y formatos mencionados.
+- Los resultados esperados.
+- Las precondiciones de cada caso.
 
 Cada dato debe tener:
 
-- name: nombre del dato.
-- value: valor concreto, únicamente cuando corresponda.
+- name: nombre descriptivo del dato.
+- value: valor concreto o null cuando corresponda.
 - status: defined, pending o example.
 
 Utiliza los estados de la siguiente manera:
 
-- defined: cuando el valor está especificado funcionalmente.
+- defined: cuando el valor está especificado funcionalmente
+  o surge directamente de una definición confirmada.
   Debe incluir un value concreto, válido y no vacío.
   No utilices null ni strings vacíos.
 
-- pending: cuando falta una definición funcional.
-  No inventes un valor para completar el dato.
-  Si todavía no existe un valor conocido, utiliza null como
-  representación de ausencia de valor.
-
-- example: cuando se utiliza un valor ilustrativo.
-  Incluye un value representativo, pero no lo consideres
+- example: cuando el análisis permite identificar el tipo,
+  propósito o características necesarias del dato, pero no
+  proporciona un valor concreto.
+  Propone un valor ilustrativo, representativo y coherente
+  con el escenario.
+  Debe incluir un value concreto y no vacío.
+  El valor es ficticio y no debe presentarse como un dato real,
   confirmado ni apto para ejecución definitiva.
+
+- pending: cuando no existe información suficiente para proponer
+  un valor razonable o cuando el dato depende de una definición
+  funcional todavía desconocida.
+  Utiliza null como representación de ausencia de valor.
+
+CRITERIOS PARA GENERAR EJEMPLOS
+
+- Genera ejemplos siempre que sea posible hacerlo sin inventar
+  reglas de negocio ni comportamientos del sistema.
+- Utiliza valores plausibles y coherentes con el dominio funcional.
+- Respeta los tipos de datos y formatos expresamente definidos.
+- Para escenarios negativos, genera valores que permitan
+  representar la condición que se desea verificar.
+- Para escenarios de límites, utiliza valores representativos
+  únicamente cuando los límites estén definidos.
+- Mantén consistencia entre los datos de un mismo caso.
+- Cuando varios casos compartan una misma entidad o contexto,
+  procura utilizar datos compatibles entre ellos.
+- No generes ejemplos que impliquen asumir permisos,
+  autenticación, relaciones entre usuarios o restricciones
+  que no estén confirmadas.
+- Si una definición pendiente impide construir un ejemplo
+  confiable, utiliza pending y explica la limitación
+  en observations.
+
+El estado example no modifica la clasificación del caso:
+un caso puede ser confirmed y contener datos example.
 
 El campo value admite valores JSON de distintos tipos:
 

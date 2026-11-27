@@ -652,6 +652,15 @@ export function validateQaDesign(qaDesign, functionalAnalysis) {
             return false;
           }
 
+          // Validar cualquier valor proporcionado, independientemente del estado.
+          if (data.value !== undefined && !isJsonValue(data.value)) {
+            errors.push(
+              `${testCase.id}: el elemento ${index + 1} de testData tiene un tipo de value no permitido.`,
+            );
+
+            return false;
+          }
+
           // Validar que los datos definidos tengan un valor.
           if (data.status === "defined") {
             const value = data.value;
@@ -670,10 +679,27 @@ export function validateQaDesign(qaDesign, functionalAnalysis) {
             }
           }
 
-          // Validar cualquier valor proporcionado, independientemente del estado.
-          if (data.value !== undefined && !isJsonValue(data.value)) {
+          // Validar que los datos de ejemplo tengan un valor concreto.
+          if (data.status === "example") {
+            const value = data.value;
+
+            if (
+              value === undefined ||
+              value === null ||
+              (typeof value === "string" && value.trim() === "")
+            ) {
+              errors.push(
+                `${testCase.id}: el elemento ${index + 1} de testData tiene un value inválido para un dato de ejemplo.`,
+              );
+
+              return false;
+            }
+          }
+
+          // Validar que los datos pendientes no tengan un valor asignado.
+          if (data.status === "pending" && data.value !== null) {
             errors.push(
-              `${testCase.id}: el elemento ${index + 1} de testData tiene un tipo de value no permitido.`,
+              `${testCase.id}: el elemento ${index + 1} de testData debe tener value null cuando su estado es pending.`,
             );
 
             return false;

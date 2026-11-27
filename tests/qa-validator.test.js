@@ -115,6 +115,7 @@ test("Debe identificar casos no preparados por tener datos pendientes", () => {
     const incompleteQaDesign = structuredClone(qaDesign);
 
     incompleteQaDesign.testCases[0].testData[0].status = "pending";
+    incompleteQaDesign.testCases[0].testData[0].value = null;
 
     const result = validateQaDesign(
         incompleteQaDesign,
@@ -492,7 +493,8 @@ test("Debe advertir cuando un caso tiene datos de prueba pendientes", () => {
     });
 
     incompleteQaDesign.testCases[0].testData[0].status = "pending";
-
+    incompleteQaDesign.testCases[0].testData[0].value = null;
+    
     const result = validateQaDesign(
         incompleteQaDesign,
         functionalAnalysis
@@ -880,6 +882,46 @@ test("Debe aceptar datos pendientes con valor null y marcarlos como no listos", 
     );
 });
 
+test("Debe rechazar datos de ejemplo con valor null", () => {
+    const invalidQaDesign = structuredClone(qaDesign);
+
+    invalidQaDesign.testCases[0].testData[0].status = "example";
+    invalidQaDesign.testCases[0].testData[0].value = null;
+
+    const result = validateQaDesign(
+        invalidQaDesign,
+        functionalAnalysis
+    );
+
+    assert.equal(result.valid, false);
+
+    assert.ok(
+        result.errors.some(error =>
+            error.includes("value inválido para un dato de ejemplo")
+        )
+    );
+});
+
+test("Debe rechazar datos pendientes con un valor concreto", () => {
+    const invalidQaDesign = structuredClone(qaDesign);
+
+    invalidQaDesign.testCases[0].testData[0].status = "pending";
+    invalidQaDesign.testCases[0].testData[0].value = "123456789012345";
+
+    const result = validateQaDesign(
+        invalidQaDesign,
+        functionalAnalysis
+    );
+
+    assert.equal(result.valid, false);
+
+    assert.ok(
+        result.errors.some(error =>
+            error.includes("debe tener value null cuando su estado es pending")
+        )
+    );
+});
+
 test("Debe aceptar distintos tipos de valores en datos de prueba", () => {
     const validQaDesign = structuredClone(qaDesign);
 
@@ -1048,6 +1090,7 @@ test("Debe advertir cuando todos los datos de prueba están pendientes", () => {
 
     testCase.testData.forEach(testData => {
         testData.status = "pending";
+        testData.value = null;
     });
 
     const result = validateQaDesign(
