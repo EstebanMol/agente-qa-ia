@@ -110,6 +110,18 @@ async function main() {
             console.log(`Porcentaje: ${scenarios.percentage}%`);
         }
 
+        // Mostrar métricas de preparación para ejecución.
+        console.log("\n=== PREPARACION PARA EJECUCION (TEST READINESS) ===");
+
+        if (qaValidation.executionReadiness) {
+            const readiness = qaValidation.executionReadiness;
+
+            console.log(`Total de casos: ${readiness.total}`);
+            console.log(`Casos listos: ${readiness.ready}`);
+            console.log(`Casos pendientes: ${readiness.notReady}`);
+            console.log(`Porcentaje de preparación: ${readiness.percentage}%`);
+        }
+
         if (!qaValidation.valid) {
             throw new Error(
                 "El diseño de QA contiene errores. No se considerará válido."

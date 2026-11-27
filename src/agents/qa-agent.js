@@ -67,14 +67,23 @@ aplicar una técnica específica.
 Cada dato debe tener:
 
 - name: nombre del dato.
-- value: valor o descripción.
+- value: valor concreto, únicamente cuando corresponda.
 - status: defined, pending o example.
 
-Utiliza:
+Utiliza los estados de la siguiente manera:
 
-- defined: cuando el dato está especificado.
+- defined: cuando el valor está especificado funcionalmente.
+  Debe incluir un value concreto, válido y no vacío.
+  No utilices null ni strings vacíos.
+
 - pending: cuando falta una definición funcional.
+  No inventes un valor para completar el dato.
+  Si todavía no existe un valor conocido, utiliza null como
+  representación de ausencia de valor.
+
 - example: cuando se utiliza un valor ilustrativo.
+  Incluye un value representativo, pero no lo consideres
+  confirmado ni apto para ejecución definitiva.
 
 El campo value admite valores JSON de distintos tipos:
 

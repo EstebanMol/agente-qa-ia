@@ -837,6 +837,49 @@ test("Debe detectar datos definidos sin valores válidos", () => {
     );
 });
 
+test("Debe rechazar datos definidos con valor null", () => {
+    const invalidQaDesign = structuredClone(qaDesign);
+
+    invalidQaDesign.testCases[0].testData[0].status = "defined";
+    invalidQaDesign.testCases[0].testData[0].value = null;
+
+    const result = validateQaDesign(
+        invalidQaDesign,
+        functionalAnalysis
+    );
+
+    assert.equal(result.valid, false);
+
+    assert.ok(
+        result.errors.some(error => error.includes("value inválido"))
+    );
+});
+
+test("Debe aceptar datos pendientes con valor null y marcarlos como no listos", () => {
+    const incompleteQaDesign = structuredClone(qaDesign);
+
+    incompleteQaDesign.testCases[0].testData[0].status = "pending";
+    incompleteQaDesign.testCases[0].testData[0].value = null;
+
+    const result = validateQaDesign(
+        incompleteQaDesign,
+        functionalAnalysis
+    );
+
+    assert.equal(result.valid, true);
+
+    assert.equal(
+        result.executionReadiness.details[0].status,
+        "notReady"
+    );
+
+    assert.ok(
+        result.executionReadiness.details[0].missingElements.includes(
+            "datos de prueba pendientes"
+        )
+    );
+});
+
 test("Debe aceptar distintos tipos de valores en datos de prueba", () => {
     const validQaDesign = structuredClone(qaDesign);
 
